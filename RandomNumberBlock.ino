@@ -6,7 +6,7 @@ The other way enables you to get a large number of random numbers by using the s
 By connecting the box to a PC, generation configurations can also be chenged via the serial console. 
 The random numbers are generated based on the data returned by a sound sensor, which makes the numbers more random. 
 Coding by HaoRan "Hurry" Peng, generation algorithm by ZheWei Zhang.
-All contents published under the liscence of CC-BY-NC-SA 4.0.
+All contents published under the license of CC-BY-NC-SA 4.0.
 */
 
 #include "HurryPeng.h"
