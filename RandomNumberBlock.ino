@@ -1,22 +1,22 @@
 /*
-This is a first-prize-winner project of ShenZhen Experimental Shchool Maker Fair 2017. 
-The previous name of the project is "RandomNumberBox", which also refers to an old configuration design. 
-The 3D-printed block is used in two ways, one of which is that you can gain a random number by pushing the button. 
-The other way enables you to get a large number of random numbers by using the serial console. 
-By connecting the box to a PC, generation configurations can also be chenged via the serial console. 
-The random numbers are generated based on the data returned by a sound sensor, which makes the numbers more random. 
-Coding by HaoRan "Hurry" Peng, generation algorithm by ZheWei Zhang.
-All contents published under the license of CC-BY-NC-SA 4.0.
+	This is a first-prize-winner project of ShenZhen Experimental Shchool Maker Fair 2017. 
+	The previous name of the project is "RandomNumberBox", which also refers to an old configuration design. 
+	The 3D-printed block is used in two ways, one of which is that you can gain a random number by pushing the button. 
+	The other way enables you to get a large number of random numbers by using the serial console. 
+	By connecting the box to a PC, generation configurations can also be chenged via the serial console. 
+	The random numbers are generated based on the data returned by a sound sensor, which makes the numbers more random. 
+	Coded by HaoRan "Hurry" Peng, generation algorithm by ZheWei "Elephant" Zhang.
+	All contents are published under the liscence of CC-BY-NC-SA 4.0.
 */
 
 #include "HurryPeng.h"
-#include "Digitron_3461BS.h"
+#include "TM1637.h"
 #include <EEPROM.h>
 
 const pin_t Sound = A0, Button = 2;
 typedef uint8_t EEPROMAdd_t;
 EEPROMAdd_t MinAddr = 0, MaxAddr = 2, StepAddr = 4, LGAddr = 6;
-Digitron_3461BS Digitron(6, 5, 4);
+TM1637 Digitron(4, 6);
 uint16_t Min, Max, Step, LastGenerated, MapAmount, MapGroup, MapMax;
 uint32_t Time[2] = { 0,0 };
 
@@ -27,7 +27,9 @@ void setup()
 	pM(Button, INPUT_PULLUP);
 	attachInterrupt(0, onButtonPress, FALLING);
 
-	Digitron.clear();
+	Digitron.init();
+	Digitron.set(BRIGHTEST);
+	Digitron.clearDisplay();
 	showDisability();
 
 	delay(100);
@@ -52,12 +54,12 @@ void loop()
 
 void showDisability()
 {
-	for (uint8_t i = 0; i <= 3; i++) Digitron.dispDigit(i, 17);
+	for (uint8_t i = 0; i <= 3; i++) Digitron.display(i, 0);
 }
 
 void showZero()
 {
-	for (uint8_t i = 0; i <= 3; i++) Digitron.dispDigit(i, 0);
+	Digitron.DigitDisplayWrite(0);
 }
 
 inline void setupMap()
@@ -81,10 +83,13 @@ inline void generate()
 {
 	uint8_t a = 0;
 	uint16_t sum = 0, l = LastGenerated;
-	sum += a = aR(Sound) % 10;
+	/*
+	sum += a = ((LastGenerated % aR(Sound)) % (millis() * 1000 % aR(Sound)) + millis()) % 10;
 	sum += 10 * ((l % 10 + a + millis()) % 10);
 	sum += 100 * ((((l /= 10) % 10) + a + millis()) % 10);
 	sum += 1000 * ((((l /= 10) % 10) + a + millis()) % 10);
+	*/
+	sum = (LastGenerated*aR(Sound) + millis()) % 10000;
 	LastGenerated = sum;
 }
 
@@ -96,7 +101,7 @@ void onButtonPress()
 		Time[0] = millis();
 		generate();
 		EEPROM.put(LGAddr, LastGenerated);
-		Digitron.dispNum(mapping(), DEC);
+		Digitron.DigitDisplayWrite(mapping());
 	}
 }
 
@@ -121,7 +126,7 @@ inline int16_t mapping()
 inline void console()
 {
 	detachInterrupt(0);
-	Digitron.clear();
+	Digitron.clearDisplay();
 	showDisability();
 	Serial.println("");
 	Serial.println(R"(Console initialised. )");
@@ -151,7 +156,7 @@ inline void console()
 			Serial.flush();
 		}
 	}
-	Digitron.clear();
+	Digitron.clearDisplay();
 	attachInterrupt(0, onButtonPress, FALLING);
 	Serial.println(R"(Console closed. Use "cmd" to recall. )");
 	Serial.flush();
